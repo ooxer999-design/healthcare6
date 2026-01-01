@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shift Management System - Dental Assistants</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            padding: 20px;
+            margin: 0;
+            height: 100vh;
+        }
+        .container {
+            max-width: 1000px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        h1, h2, h3 { text-align: center; color: #0d6efd; }
+        form { margin-bottom: 20px; }
+        input, select, button, textarea { display: block; width: 100%; margin: 10px 0; padding: 12px; font-size: 16px; }
+        button { background-color: #28a745; color: white; border: none; cursor: pointer; border-radius: 6px; }
+        button:hover { background-color: #218838; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+        th { background-color: #e9ecef; }
+        .hidden { display: none; }
+        .section { margin-bottom: 40px; }
+        .available { background-color: #d4edda; color: #155724; }
+        .taken-other { background-color: #f8d7da; color: #721c24; }
+        .taken-me { background-color: #d4edda; color: #155724; }
+        .take-btn { background-color: #007bff; padding: 8px 12px; font-size: 14px; }
+        .cancel-btn { background-color: #dc3545; padding: 8px 12px; font-size: 14px; }
+        .take-btn:disabled, .cancel-btn:disabled { background-color: #6c757d; cursor: not-allowed; }
+        .delete-btn { background-color: #dc3545; padding: 8px 12px; font-size: 14px; }
+        .manager-login-link {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 14px;
+            color: green !important;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        .manager-login-link:hover { color: darkgreen !important; }
+        .default-login {
+            max-width: 400px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .checkbox-group {
+            margin: 15px 0;
+            border: 1px solid #ddd;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 6px;
+            min-height: 220px;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .checkbox-item input[type="checkbox"] {
+            margin: 0 10px 0 0;
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+        .checkbox-item label { margin: 0; line-height: 1.5; }
+        textarea {
+            resize: vertical;
+            font-family: inherit;
+            height: 220px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Shift Management System</h1>
+        <div class="manager-login-link" onclick="showAdminLogin()">Login as Manager</div>
+        <div id="main-login">
+            <h2>Employee Login</h2>
+            <div class="default-login">
+                <form id="emp-login-form-main">
+                    <input type="text" id="emp-login-username-main" placeholder="Username" required>
+                    <input type="password" id="emp-login-password-main" placeholder="Password" required>
+                    <button type="submit">Login</button>
+                </form>
+            </div>
+        </div>
+        <div id="admin-login-section" class="hidden">
+            <h2>Manager Login</h2>
+            <form id="admin-login-form">
+                <input type="text" id="admin-username" placeholder="Username" required>
+                <input type="password" id="admin-password" placeholder="Password" required>
+                <button type="submit">Login</button>
+            </form>
+        </div>
+        <div id="admin-section" class="hidden section">
+            <h2>Manager Dashboard</h2>
+            <div style="text-align: center; margin: 25px 0;">
+                <button class="take-btn" onclick="showEmployeeManagement()">إدارة الموظفين (Manage Employees)</button>
+            </div>
+            <div id="main-admin-content">
+                <form id="add-shift-form">
+                    <h3>Add New Shift Group</h3>
+                    <input type="text" id="center-name" placeholder="Health Center Name" required>
+                    <label for="week-start">Week Start Date (Sunday)</label>
+                    <input type="date" id="week-start" required>
+                    <div class="info">End date will be automatically set to the Thursday of the same week.</div>
+                    <select id="shift-type" required>
+                        <option value="">Select Shift Type</option>
+                        <option value="morning">Morning Shift (8:00 AM - 4:00 PM)</option>
+                        <option value="evening">Evening Shift (3:30 PM - 11:30 PM)</option>
+                    </select>
+                    <div style="display: flex; gap: 25px; align-items: flex-start; margin-top: 20px;">
+                        <div style="flex: 1;">
+                            <label>Visible to:</label>
+                            <div class="checkbox-group" id="visible-to-checkboxes">
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="visible-all" checked>
+                                    <label for="visible-all">All Employees</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="quick-select-names">Paste employee names here for quick selection</label>
+                            <textarea id="quick-select-names" placeholder=""></textarea>
+                        </div>
+                    </div>
+                    <button type="submit" style="margin-top: 20px;">Add Shift Group</button>
+                </form>
+                <h3>All Shift Groups</h3>
+                <table id="all-shifts-table">
+                    <thead>
+                        <tr>
+                            <th>Visible To</th>
+                            <th>Center</th>
+                            <th>Week Period</th>
+                            <th>Shift Type</th>
+                            <th>Time</th>
+                            <th>Taken By</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <button id="logout">Logout</button>
+            </div>
+            <div id="employee-management-page" class="hidden section">
+                <h2>إدارة الموظفين - Manage Employees</h2>
+                <button class="cancel-btn" onclick="backToMainDashboard()" style="margin-bottom: 25px;">← العودة إلى لوحة التحكم الرئيسية</button>
+                <form id="add-employee-form">
+                    <h3>Add New Employee</h3>
+                    <input type="text" id="emp-username" placeholder="Username" required>
+                    <input type="password" id="emp-password" placeholder="Password" required>
+                    <input type="text" id="emp-fullname" placeholder="Full Name" required>
+                    <button type="submit">Add Employee</button>
+                </form>
+                <h3>Employees List</h3>
+                <table id="employees-table">
+                    <thead><tr><th>Username</th><th>Password</th><th>Full Name</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+        <div id="employee-dashboard" class="hidden section">
+            <h2>Welcome, <span id="employee-name"></span></h2>
+            <button id="show-change-password">Change Password</button>
+            <div id="change-password-section" class="hidden">
+                <h3>Change Your Password</h3>
+                <form id="change-password-form">
+                    <input type="password" id="old-password" placeholder="Current Password" required>
+                    <input type="password" id="new-password" placeholder="New Password" required>
+                    <input type="password" id="confirm-password" placeholder="Confirm New Password" required>
+                    <button type="submit">Change Password</button>
+                    <button type="button" id="cancel-change-password">Cancel</button>
+                </form>
+            </div>
+            <h3>Available Shift Groups</h3>
+            <table id="emp-shifts-table">
+                <thead>
+                    <tr>
+                        <th>Health Center</th>
+                        <th>Week Period</th>
+                        <th>Shift Type</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <button id="emp-logout">Logout</button>
+        </div>
+    </div>
+    <script>
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz1_uOpMVNqPfBjQYFwxUHn4khDrEj4ZR8lZKJBCicP1cUZpf7mTXxFseg-Z6BXXMgBlA/exec';
+        let shiftGroups = [];
+        let currentEmployee = null;
+        let currentFullName = null;
+        const today = new Date();
+        const shiftTimes = {
+            morning: { name: "Morning Shift", start: "8:00 AM", end: "4:00 PM" },
+            evening: { name: "Evening Shift", start: "3:30 PM - 11:30 PM" }
+        };
+        async function loadData() {
+            try {
+                const shiftRes = await fetch(`${SCRIPT_URL}?action=getShifts`);
+                const shiftData = await shiftRes.json();
+                shiftGroups = shiftData.map(row => ({
+                    id: row[0],
+                    center: row[1],
+                    start: row[2],
+                    end: row[3],
+                    type: row[4],
+                    takenBy: row[5] || null,
+                    visibleTo: row[6] ? row[6].split(',').map(s => s.trim()) : ['all']
+                }));
+                updateVisibleCheckboxes();
+                displayAllShifts();
+                displayEmployeesList();
+                tryAutoLogin();
+                if (currentEmployee) displayEmployeeShifts();
+            } catch (err) {
+                console.error('Error loading data:', err);
+            }
+        }
+        async function deleteShift(id) {
+            if (!confirm('هل أنت متأكد من حذف هذه الوردية؟')) return;
+            try {
+                const res = await fetch(`${SCRIPT_URL}?action=deleteShift&id=${id}`);
+                if (res.ok) {
+                    await loadData();
+                    alert('تم حذف الوردية بنجاح');
+                } else {
+                    alert('فشل في الحذف');
+                }
+            } catch (err) {
+                console.error('Delete error:', err);
+                alert('حدث خطأ أثناء الحذف');
+            }
+        }
+        document.getElementById('emp-login-form-main').addEventListener('submit', async e => {
+            e.preventDefault();
+           
+            // تحويل اسم المستخدم إلى حروف صغيرة فقط لإزالة حساسية الحروف
+            const usernameRaw = document.getElementById('emp-login-username-main').value.trim();
+            const username = usernameRaw.toLowerCase();
+            const password = document.getElementById('emp-login-password-main').value; // الباسوورد يبقى كما هو (حساس للحروف)
+
+            try {
+                const response = await fetch(
+                    `${SCRIPT_URL}?action=verifyLogin&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
+                );
+                const result = await response.json();
+                if (result.success) {
+                    // نحفظ اسم المستخدم كما أدخله المستخدم أصلاً (مع الحروف الكبيرة/الصغيرة) للعرض فقط
+                    currentEmployee = username; // للمقارنة داخلياً نستخدم الصغيرة
+                    currentFullName = result.fullName || usernameRaw;
+                    localStorage.setItem('loggedInEmployee', username); // نحفظ الصغيرة للمقارنة
+                    localStorage.setItem('loggedInFullName', currentFullName);
+                    localStorage.setItem('loggedInOriginalUsername', usernameRaw); // نحفظ الأصلي للعرض إذا لزم
+                    document.getElementById('employee-name').textContent = currentFullName;
+                    document.getElementById('main-login').classList.add('hidden');
+                    document.getElementById('employee-dashboard').classList.remove('hidden');
+                    displayEmployeeShifts();
+                } else {
+                    alert('اسم المستخدم أو كلمة المرور غير صحيحة\nIncorrect username or password');
+                }
+            } catch (err) {
+                console.error('Login error:', err);
+                alert('حدث خطأ أثناء التحقق، حاول مرة أخرى');
+            }
+        });
+        function tryAutoLogin() {
+            const savedUsername = localStorage.getItem('loggedInEmployee');
+            const savedFullName = localStorage.getItem('loggedInFullName');
+            if (!savedUsername) return;
+            currentEmployee = savedUsername; // الصغيرة
+            currentFullName = savedFullName || savedUsername;
+            document.getElementById('employee-name').textContent = currentFullName;
+            document.getElementById('main-login').classList.add('hidden');
+            document.getElementById('employee-dashboard').classList.remove('hidden');
+            displayEmployeeShifts();
+        }
+        document.getElementById('admin-login-form').addEventListener('submit', e => {
+            e.preventDefault();
+            const username = document.getElementById('admin-username').value;
+            const password = document.getElementById('admin-password').value;
+            if (username === 'abdullah' && password === '123') {
+                document.getElementById('main-login').classList.add('hidden');
+                document.getElementById('admin-login-section').classList.add('hidden');
+                document.getElementById('admin-section').classList.remove('hidden');
+                updateVisibleCheckboxes();
+                displayEmployeesList();
+            } else {
+                alert('Incorrect username or password');
+            }
+        });
+        function showAdminLogin() {
+            document.getElementById('main-login').classList.add('hidden');
+            document.getElementById('admin-login-section').classList.remove('hidden');
+        }
+        document.getElementById('logout').addEventListener('click', () => {
+            document.getElementById('admin-section').classList.add('hidden');
+            document.getElementById('main-login').classList.remove('hidden');
+        });
+        document.getElementById('emp-logout').addEventListener('click', () => {
+            localStorage.removeItem('loggedInEmployee');
+            localStorage.removeItem('loggedInFullName');
+            localStorage.removeItem('loggedInOriginalUsername');
+            document.getElementById('employee-dashboard').classList.add('hidden');
+            document.getElementById('main-login').classList.remove('hidden');
+            currentEmployee = null;
+            currentFullName = null;
+        });
+        document.getElementById('show-change-password').addEventListener('click', () => {
+            document.getElementById('change-password-section').classList.remove('hidden');
+        });
+        document.getElementById('cancel-change-password').addEventListener('click', () => {
+            document.getElementById('change-password-section').classList.add('hidden');
+            document.getElementById('change-password-form').reset();
+        });
+        document.getElementById('change-password-form').addEventListener('submit', e => {
+            e.preventDefault();
+            alert('Password change is not supported in the centralized version (can be changed manually in the Sheet).');
+        });
+        document.getElementById('quick-select-names').addEventListener('input', function() {
+            const text = this.value.trim();
+            if (!text) return;
+            const lines = text.split('\n')
+                .map(line => line.trim())
+                .filter(name => name.length > 0);
+            document.querySelectorAll('#visible-to-checkboxes input[type="checkbox"]:not(#visible-all)').forEach(cb => {
+                cb.checked = false;
+            });
+            lines.forEach(name => {
+                // مقارنة غير حساسة للحروف عند التحديد السريع
+                const checkbox = document.getElementById('visible-' + name.toLowerCase());
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
+            });
+            const anyChecked = Array.from(document.querySelectorAll('#visible-to-checkboxes input[type="checkbox"]:not(#visible-all)'))
+                .some(cb => cb.checked);
+           
+            if (anyChecked) {
+                document.getElementById('visible-all').checked = false;
+            }
+        });
+        function getNextId() {
+            if (shiftGroups.length === 0) return 1;
+            return Math.max(...shiftGroups.map(g => g.id)) + 1;
+        }
+        function formatWeekPeriod(start, end) {
+            const s = new Date(start).toLocaleDateString('en-US');
+            const e = new Date(end).toLocaleDateString('en-US');
+            return `${s} - ${e}`;
+        }
+        function getThursdayFromSunday(startDateStr) {
+            let date = new Date(startDateStr);
+            let day = date.getDay();
+            if (day !== 0) {
+                alert('Please select a Sunday as the start date.');
+                return null;
+            }
+            date.setDate(date.getDate() + 4);
+            return date.toISOString().split('T')[0];
+        }
+        function updateVisibleCheckboxes() {
+            const container = document.getElementById('visible-to-checkboxes');
+            container.innerHTML = '<div class="checkbox-item"><input type="checkbox" id="visible-all" checked><label for="visible-all">All Employees</label></div>';
+           
+            fetch(`${SCRIPT_URL}?action=getEmployees`)
+                .then(res => res.json())
+                .then(data => {
+                    data.forEach(row => {
+                        const username = row[0].toLowerCase(); // نخزن الـ username بالصغيرة للمقارنة
+                        const div = document.createElement('div');
+                        div.className = 'checkbox-item';
+                        div.innerHTML = `<input type="checkbox" id="visible-${username}" value="${username}">
+                                         <label for="visible-${username}">${row[0]}</label>`; // نعرض الاسم الأصلي
+                        container.appendChild(div);
+                    });
+                   
+                    document.querySelectorAll('#visible-to-checkboxes input[type="checkbox"]:not(#visible-all)').forEach(cb => {
+                        cb.addEventListener('change', () => document.getElementById('visible-all').checked = false);
+                    });
+                    document.getElementById('visible-all').addEventListener('change', () => {
+                        if (document.getElementById('visible-all').checked) {
+                            document.querySelectorAll('#visible-to-checkboxes input[type="checkbox"]:not(#visible-all)').forEach(cb => cb.checked = false);
+                        }
+                    });
+                });
+        }
+        function displayAllShifts() {
+            const tbody = document.querySelector('#all-shifts-table tbody');
+            tbody.innerHTML = '';
+            shiftGroups.forEach(group => {
+                const visible = group.visibleTo.includes('all') ? 'All Employees' : group.visibleTo.join(', ');
+                const taken = group.takenBy || '-';
+                const timeInfo = shiftTimes[group.type];
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${visible}</td>
+                    <td>${group.center}</td>
+                    <td>${formatWeekPeriod(group.start, group.end)}</td>
+                    <td>${timeInfo.name}</td>
+                    <td>${timeInfo.start} - ${timeInfo.end}</td>
+                    <td>${taken}</td>
+                    <td><button class="delete-btn" data-id="${group.id}">Delete</button></td>
+                `;
+                tbody.appendChild(row);
+            });
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = parseInt(btn.dataset.id);
+                    deleteShift(id);
+                });
+            });
+        }
+        function displayEmployeeShifts() {
+            const tbody = document.querySelector('#emp-shifts-table tbody');
+            tbody.innerHTML = '';
+            const myShift = shiftGroups.find(g => g.takenBy === currentFullName);
+            shiftGroups.forEach(group => {
+                if (new Date(group.end) < today) return;
+                // مقارنة غير حساسة للحروف عند التحقق من الرؤية
+                const isVisible = group.visibleTo.includes('all') || group.visibleTo.some(v => v.toLowerCase() === currentEmployee);
+                if (!isVisible) return;
+                const isTaken = group.takenBy !== null;
+                const takenByMe = group.takenBy === currentFullName;
+                const row = document.createElement('tr');
+                if (takenByMe) row.classList.add('taken-me');
+                else if (isTaken) row.classList.add('taken-other');
+                else row.classList.add('available');
+                const timeInfo = shiftTimes[group.type];
+                let btn = '';
+                if (takenByMe) btn = `<button class="cancel-btn" data-id="${group.id}">Cancel Selection</button>`;
+                else if (!isTaken && !myShift) btn = `<button class="take-btn" data-id="${group.id}">Take Shift</button>`;
+                else if (isTaken) btn = '<button disabled>Taken</button>';
+                else if (myShift) btn = '<button disabled>You already selected a shift</button>';
+                row.innerHTML = `
+                    <td>${group.center}</td>
+                    <td>${formatWeekPeriod(group.start, group.end)}</td>
+                    <td>${timeInfo.name}</td>
+                    <td>${timeInfo.start} - ${timeInfo.end}</td>
+                    <td>${isTaken ? 'Taken' : 'Available'}</td>
+                    <td>${btn}</td>
+                `;
+                tbody.appendChild(row);
+            });
+           
+            // إزالة الـ event listeners القديمة لأزرار Take Shift وإضافتها من جديد
+            document.querySelectorAll('.take-btn').forEach(btn => {
+                if (btn._takeShiftHandler) {
+                    btn.removeEventListener('click', btn._takeShiftHandler);
+                }
+            });
+            document.querySelectorAll('.take-btn').forEach(btn => {
+                btn._takeShiftHandler = async () => {
+                    const id = parseInt(btn.dataset.id);
+                    await takeShift(id);
+                };
+                btn.addEventListener('click', btn._takeShiftHandler);
+            });
+
+            // إزالة الـ event listeners القديمة لأزرار Cancel وإضافتها من جديد
+            document.querySelectorAll('.cancel-btn').forEach(btn => {
+                if (btn._cancelShiftHandler) {
+                    btn.removeEventListener('click', btn._cancelShiftHandler);
+                }
+            });
+            document.querySelectorAll('.cancel-btn').forEach(btn => {
+                btn._cancelShiftHandler = async () => {
+                    const id = parseInt(btn.dataset.id);
+                    if (confirm('Are you sure you want to cancel this shift selection?')) {
+                        await cancelShift(id);
+                    }
+                };
+                btn.addEventListener('click', btn._cancelShiftHandler);
+            });
+        }
+        async function takeShift(id) {
+            const res = await fetch(`${SCRIPT_URL}?action=takeShift&id=${id}&username=${encodeURIComponent(currentEmployee)}`);
+            if (res.ok) {
+                await loadData();
+                alert('Shift taken successfully');
+            } else {
+                alert('Failed to take shift. It may already be taken.');
+            }
+        }
+        async function cancelShift(id) {
+            const res = await fetch(`${SCRIPT_URL}?action=cancelShift&id=${id}`);
+            if (res.ok) {
+                await loadData();
+                alert('Shift cancelled successfully');
+            }
+        }
+        document.getElementById('add-shift-form').addEventListener('submit', async e => {
+            e.preventDefault();
+            const center = document.getElementById('center-name').value.trim();
+            const start = document.getElementById('week-start').value;
+            const type = document.getElementById('shift-type').value;
+            if (!center || !start || !type) return alert('Please fill all fields');
+            const end = getThursdayFromSunday(start);
+            if (!end) return;
+            const allChecked = document.getElementById('visible-all').checked;
+            let visibleTo = allChecked ? ['all'] : [];
+            if (!allChecked) {
+                document.querySelectorAll('#visible-to-checkboxes input[type="checkbox"]:not(#visible-all)').forEach(cb => {
+                    if (cb.checked) visibleTo.push(cb.value); // القيم مخزنة بالصغيرة
+                });
+                if (visibleTo.length === 0) return alert('Select at least one employee or "All Employees"');
+            }
+            const group = { id: getNextId(), center, start, end, type, takenBy: null, visibleTo };
+            const formData = new FormData();
+            formData.append('action', 'addShift');
+            formData.append('data', JSON.stringify([
+                group.id, group.center, group.start, group.end, group.type, '', group.visibleTo.join(',')
+            ]));
+            const res = await fetch(SCRIPT_URL, { method: 'POST', body: formData });
+            if (res.ok) {
+                await loadData();
+                alert('Shift group added successfully');
+            }
+            document.getElementById('center-name').value = '';
+            document.getElementById('week-start').value = '';
+            document.getElementById('shift-type').value = '';
+            document.getElementById('visible-all').checked = true;
+            document.getElementById('quick-select-names').value = '';
+        });
+        document.getElementById('add-employee-form').addEventListener('submit', async e => {
+            e.preventDefault();
+            const usernameRaw = document.getElementById('emp-username').value.trim();
+            const username = usernameRaw.toLowerCase(); // نحفظ بالصغيرة في الـ backend
+            const password = document.getElementById('emp-password').value.trim();
+            const fullName = document.getElementById('emp-fullname').value.trim();
+            if (!username || !password || !fullName) return alert('Please fill all fields');
+            const formData = new FormData();
+            formData.append('action', 'addEmployee');
+            formData.append('data', JSON.stringify([username, password, fullName]));
+            const res = await fetch(SCRIPT_URL, { method: 'POST', body: formData });
+            if (res.ok) {
+                await loadData();
+                alert('Employee added successfully');
+            }
+            document.getElementById('emp-username').value = '';
+            document.getElementById('emp-password').value = '';
+            document.getElementById('emp-fullname').value = '';
+        });
+        function showEmployeeManagement() {
+            document.getElementById('main-admin-content').classList.add('hidden');
+            document.getElementById('employee-management-page').classList.remove('hidden');
+        }
+        function backToMainDashboard() {
+            document.getElementById('employee-management-page').classList.add('hidden');
+            document.getElementById('main-admin-content').classList.remove('hidden');
+        }
+        function displayEmployeesList() {
+            fetch(`${SCRIPT_URL}?action=getEmployees`)
+                .then(res => res.json())
+                .then(data => {
+                    const tbody = document.querySelector('#employees-table tbody');
+                    tbody.innerHTML = '';
+                    data.forEach(row => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `<td>${row[0]}</td><td>${row[1]}</td><td>${row[2]}</td>`;
+                        tbody.appendChild(tr);
+                    });
+                });
+        }
+        loadData();
+    </script>
+</body>
+</html>
